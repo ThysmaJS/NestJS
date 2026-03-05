@@ -1,26 +1,84 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { User, UserRole } from './interfaces/user.interface';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+  private users: User[] = [];
+
+  findAll(): User[] {
+    return this.users;
   }
 
-  findAll() {
-    return `This action returns all users`;
+  findOne(id: string): User {
+    const user = this.users.find((u) => u.id.toString() === id);
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    return user;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  findByEmail(email: string): User | undefined {
+    return this.users.find((u) => u.email === email);
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  create(dto: CreateUserDto): User {
+    // Vérifier qu'aucun utilisateur n'a déjà cet email
+    if (this.findByEmail(dto.email)) {
+      throw new ConflictException(`User with email ${dto.email} already exists`);
+    }
+
+    // Créer le nouvel utilisateur
+    const newUser: User = {
+      id: parseInt(randomUUID().replace(/-/g, '').substring(0, 10)),
+      email: dto.email,
+      name: dto.name,
+      role: dto.role ?? UserRole.MEMBER,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    this.users.push(newUser);
+    return newUser;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  update(id: string, dto: UpdateUserDto): User {
+    // Récupérer l'utilisateur (findOne lève déjà 404)
+    const user = this.findOne(id);
+
+    // Si l'email change, vérifier qu'il n'est pas déjà pris
+    if (dto.email && dto.email !== user.email) {
+      if (this.findByEmail(dto.email)) {
+        throw new ConflictException(
+          `User with email ${dto.email} already exists`,
+        );
+      }
+      user.email = dto.email;
+    }
+
+    // Mettre à jour les autres champs
+    if (dto.name !== undefined) {
+      user.name = dto.name;
+    }
+    if (dto.role !== undefined) {
+      user.role = dto.role;
+    }
+
+    user.updatedAt = new Date();
+    return user;
+  }
+
+  remove(id: string): void {
+    const index = this.users.findIndex((u) => u.id.toString() === id);
+    if (index === -1) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    this.users.splice(index, 1);
   }
 }
