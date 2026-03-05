@@ -39,6 +39,7 @@ export class UsersService {
       id: parseInt(randomUUID().replace(/-/g, '').substring(0, 10)),
       email: dto.email,
       name: dto.name,
+      password: dto.password,
       role: dto.role ?? UserRole.MEMBER,
       createdAt: new Date(),
       updatedAt: new Date(),
