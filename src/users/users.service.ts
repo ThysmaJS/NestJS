@@ -3,83 +3,78 @@ import {
   NotFoundException,
   ConflictException,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User, UserRole } from './interfaces/user.interface';
+import { UserEntity } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [];
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly usersRepository: Repository<UserEntity>,
+  ) {}
 
-  findAll(): User[] {
-    return this.users;
+  async findAll(): Promise<UserEntity[]> {
+    return this.usersRepository.find();
   }
 
-  findOne(id: string): User {
-    const user = this.users.find((u) => u.id.toString() === id);
+  async findOne(id: string): Promise<UserEntity> {
+    const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User with id ${id} not found`);
     }
     return user;
   }
 
-  findByEmail(email: string): User | undefined {
-    return this.users.find((u) => u.email === email);
+  async findByEmail(email: string): Promise<UserEntity | null> {
+    return this.usersRepository.findOne({ where: { email } });
   }
 
-  create(dto: CreateUserDto): User {
-    // Vérifier qu'aucun utilisateur n'a déjà cet email
-    if (this.findByEmail(dto.email)) {
+  async create(dto: CreateUserDto): Promise<UserEntity> {
+    // Vérifier que l'email est unique
+    const existingUser = await this.findByEmail(dto.email);
+    if (existingUser) {
       throw new ConflictException(`User with email ${dto.email} already exists`);
     }
 
-    // Créer le nouvel utilisateur
-    const newUser: User = {
-      id: parseInt(randomUUID().replace(/-/g, '').substring(0, 10)),
-      email: dto.email,
-      name: dto.name,
-      password: dto.password,
-      role: dto.role ?? UserRole.MEMBER,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    // Hacher le mot de passe
+    const passwordHash = await bcrypt.hash(dto.password, 10);
 
-    this.users.push(newUser);
-    return newUser;
+    // Créer et sauvegarder l'utilisateur
+    const user = this.usersRepository.create({
+      email: dto.email,
+      passwordHash,
+      name: dto.name,
+      role: dto.role,
+    });
+
+    return this.usersRepository.save(user);
   }
 
-  update(id: string, dto: UpdateUserDto): User {
-    // Récupérer l'utilisateur (findOne lève déjà 404)
-    const user = this.findOne(id);
+  async update(id: string, dto: UpdateUserDto): Promise<UserEntity> {
+    // Récupérer l'utilisateur
+    const user = await this.findOne(id);
 
-    // Si l'email change, vérifier qu'il n'est pas déjà pris
+    // Vérifier l'unicité de l'email si changé
     if (dto.email && dto.email !== user.email) {
-      if (this.findByEmail(dto.email)) {
+      const existingUser = await this.findByEmail(dto.email);
+      if (existingUser) {
         throw new ConflictException(
           `User with email ${dto.email} already exists`,
         );
       }
-      user.email = dto.email;
     }
 
-    // Mettre à jour les autres champs
-    if (dto.name !== undefined) {
-      user.name = dto.name;
-    }
-    if (dto.role !== undefined) {
-      user.role = dto.role;
-    }
-
-    user.updatedAt = new Date();
-    return user;
+    // Mettre à jour l'utilisateur
+    Object.assign(user, dto);
+    return this.usersRepository.save(user);
   }
 
-  remove(id: string): void {
-    const index = this.users.findIndex((u) => u.id.toString() === id);
-    if (index === -1) {
-      throw new NotFoundException(`User with id ${id} not found`);
-    }
-    this.users.splice(index, 1);
+  async remove(id: string): Promise<void> {
+    const user = await this.findOne(id);
+    await this.usersRepository.remove(user);
   }
 }
