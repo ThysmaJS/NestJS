@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -14,6 +15,8 @@ import { UserRole } from './interfaces/user.interface';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(UserEntity)
     private readonly usersRepository: Repository<UserEntity>,
@@ -44,7 +47,7 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto): Promise<UserEntity> {
-    // Vérifier que l'email est unique
+    this.logger.log(`Création d'un utilisateur : ${dto.email}`);
     const existingUser = await this.findByEmail(dto.email);
     if (existingUser) {
       throw new ConflictException(`User with email ${dto.email} already exists`);
@@ -87,6 +90,7 @@ export class UsersService {
   }
 
   async remove(id: string): Promise<void> {
+    this.logger.warn(`Suppression de l'utilisateur : ${id}`);
     const user = await this.findOne(id);
     await this.usersRepository.remove(user);
   }
