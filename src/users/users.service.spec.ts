@@ -80,7 +80,8 @@ describe('UsersService', () => {
       repo.save.mockResolvedValue(newUser as UserEntity);
       const result = await service.create(dto);
       expect(repo.save).toHaveBeenCalledTimes(1);
-      expect(result).toEqual(newUser);
+      const { passwordHash: _, ...expectedWithoutHash } = newUser;
+      expect(result).toEqual(expectedWithoutHash);
     });
 
     it('lève ConflictException si l\'email existe déjà', async () => {
