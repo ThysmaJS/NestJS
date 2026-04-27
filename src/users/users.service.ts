@@ -33,6 +33,14 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { email } });
   }
 
+  async findByEmailWithPassword(email: string): Promise<UserEntity | null> {
+    return this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.email = :email', { email })
+      .getOne();
+  }
+
   async create(dto: CreateUserDto): Promise<UserEntity> {
     // Vérifier que l'email est unique
     const existingUser = await this.findByEmail(dto.email);
