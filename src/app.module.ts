@@ -11,6 +11,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { CommentsModule } from './comments/comments.module';
 import { AuthModule } from './auth/auth.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { HealthModule } from './health/health.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 
@@ -42,6 +43,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     CommentsModule,
     AuthModule,
     NotificationsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [

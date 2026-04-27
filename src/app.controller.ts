@@ -11,13 +11,4 @@ export class AppController {
   getHello(): { message: string; version: string } {
     return this.appService.getHello();
   }
-
-  @Public()
-  @Get('health')
-  health(): { status: string; timestamp: string } {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-    };
-  }
 }
