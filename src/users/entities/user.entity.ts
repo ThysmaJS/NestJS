@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToMany,
   Index,
 } from 'typeorm';
 import { UserRole } from '../interfaces/user.interface';
@@ -29,6 +30,9 @@ export class UserEntity {
     default: UserRole.MEMBER,
   })
   role: UserRole;
+
+  @ManyToMany('TeamEntity', 'members')
+  teams: any[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
