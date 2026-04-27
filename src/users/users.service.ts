@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserEntity } from './entities/user.entity';
+import { UserRole } from './interfaces/user.interface';
 
 @Injectable()
 export class UsersService {
@@ -62,7 +64,10 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<UserEntity> {
+  async update(id: string, dto: UpdateUserDto, currentUser: { id: string; role: string }): Promise<UserEntity> {
+    if (currentUser.role !== UserRole.ADMIN && currentUser.id !== id) {
+      throw new ForbiddenException();
+    }
     // Récupérer l'utilisateur
     const user = await this.findOne(id);
 

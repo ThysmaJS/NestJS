@@ -1,14 +1,20 @@
 @baseUrl = http://localhost:3000/api
 @token = REMPLACER_PAR_LE_TOKEN
+@adminToken = REMPLACER_TOKEN_ALICE_ADMIN
+@viewerToken = REMPLACER_TOKEN_CHARLIE_VIEWER
+@bobToken = REMPLACER_TOKEN_BOB_MEMBER
 
-### Login ✅
+### Login Alice (admin)
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
-{
-  "email": "alice@taskflow.dev",
-  "password": "password123"
-}
+{ "email": "alice@taskflow.dev", "password": "password123" }
+
+### Login Charlie (viewer)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "charlie@taskflow.dev", "password": "password123" }
 
 ### Login mauvais mot de passe → 401
 POST {{baseUrl}}/auth/login
@@ -25,3 +31,25 @@ Authorization: Bearer {{token}}
 
 ### Route protégée sans token → 401
 GET {{baseUrl}}/users
+
+### ADMIN peut supprimer → 204
+DELETE {{baseUrl}}/users/USER_UUID
+Authorization: Bearer {{adminToken}}
+
+### VIEWER ne peut pas supprimer → 403
+DELETE {{baseUrl}}/users/USER_UUID
+Authorization: Bearer {{viewerToken}}
+
+### MEMBER peut modifier son propre profil → 200
+PATCH {{baseUrl}}/users/BOB_UUID
+Authorization: Bearer {{bobToken}}
+Content-Type: application/json
+
+{ "name": "Bob Martin-Dupont" }
+
+### MEMBER ne peut PAS modifier le profil d'Alice → 403
+PATCH {{baseUrl}}/users/ALICE_UUID
+Authorization: Bearer {{bobToken}}
+Content-Type: application/json
+
+{ "name": "Alice Hacké" }

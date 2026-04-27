@@ -7,6 +7,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { UserRole } from '../interfaces/user.interface';
+export { UserRole };
 
 export class CreateUserDto {
   @IsEmail({}, { message: 'Adresse email invalide' })
