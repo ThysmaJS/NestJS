@@ -64,7 +64,9 @@ export class UsersService {
       role: dto.role,
     });
 
-    return this.usersRepository.save(user);
+    const saved = await this.usersRepository.save(user);
+    const { passwordHash: _, ...result } = saved;
+    return result as UserEntity;
   }
 
   async update(id: string, dto: UpdateUserDto, currentUser: { id: string; role: string }): Promise<UserEntity> {
