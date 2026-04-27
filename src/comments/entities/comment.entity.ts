@@ -3,17 +3,13 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
   ManyToOne,
-  ForeignKey,
-  Index,
+  JoinColumn,
 } from 'typeorm';
-import { TaskEntity } from '../../tasks/entities/task.entity';
 import { UserEntity } from '../../users/entities/user.entity';
+import { TaskEntity } from '../../tasks/entities/task.entity';
 
 @Entity('comments')
-@Index(['taskId'])
-@Index(['authorId'])
 export class CommentEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -21,23 +17,20 @@ export class CommentEntity {
   @Column({ type: 'text' })
   content: string;
 
-  @Column({ type: 'uuid' })
-  @ForeignKey(() => TaskEntity)
-  taskId: string;
-
-  @ManyToOne(() => TaskEntity)
-  task: TaskEntity;
-
-  @Column({ type: 'uuid' })
-  @ForeignKey(() => UserEntity)
-  authorId: string;
-
-  @ManyToOne(() => UserEntity)
+  @ManyToOne(() => UserEntity, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
+  @JoinColumn({ name: 'author_id' })
   author: UserEntity;
+
+  @ManyToOne(() => TaskEntity, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
+  @JoinColumn({ name: 'task_id' })
+  task: TaskEntity;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
 }

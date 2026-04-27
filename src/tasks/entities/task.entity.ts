@@ -5,18 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  OneToMany,
-  ForeignKey,
-  Index,
+  JoinColumn,
 } from 'typeorm';
 import { TaskStatus, TaskPriority } from '../interfaces/task.interface';
 import { ProjectEntity } from '../../projects/entities/project.entity';
 import { UserEntity } from '../../users/entities/user.entity';
-import { CommentEntity } from '../../comments/entities/comment.entity';
 
 @Entity('tasks')
-@Index(['projectId'])
-@Index(['assigneeId'])
 export class TaskEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -41,22 +36,19 @@ export class TaskEntity {
   })
   priority: TaskPriority;
 
-  @Column({ type: 'uuid' })
-  @ForeignKey(() => ProjectEntity)
-  projectId: string;
-
-  @ManyToOne(() => ProjectEntity, (project) => project.tasks)
+  @ManyToOne(() => ProjectEntity, (project) => project.tasks, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
+  @JoinColumn({ name: 'project_id' })
   project: ProjectEntity;
 
-  @Column({ type: 'uuid', nullable: true })
-  @ForeignKey(() => UserEntity)
-  assigneeId?: string;
-
-  @ManyToOne(() => UserEntity, { nullable: true })
+  @ManyToOne(() => UserEntity, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
+  @JoinColumn({ name: 'assignee_id' })
   assignee?: UserEntity;
-
-  @OneToMany(() => CommentEntity, (comment) => comment.task)
-  comments: CommentEntity[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

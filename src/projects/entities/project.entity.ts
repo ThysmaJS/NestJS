@@ -6,15 +6,13 @@ import {
   UpdateDateColumn,
   ManyToOne,
   OneToMany,
-  ForeignKey,
-  Index,
+  JoinColumn,
 } from 'typeorm';
 import { ProjectStatus } from '../interfaces/project.interface';
 import { TeamEntity } from '../../teams/entities/team.entity';
 import { TaskEntity } from '../../tasks/entities/task.entity';
 
 @Entity('projects')
-@Index(['teamId'])
 export class ProjectEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -32,13 +30,11 @@ export class ProjectEntity {
   })
   status: ProjectStatus;
 
-  @Column({ type: 'uuid' })
-  @ForeignKey(() => TeamEntity)
-  teamId: string;
-
   @ManyToOne(() => TeamEntity, (team) => team.projects, {
     onDelete: 'CASCADE',
+    nullable: false,
   })
+  @JoinColumn({ name: 'team_id' })
   team: TeamEntity;
 
   @OneToMany(() => TaskEntity, (task) => task.project)

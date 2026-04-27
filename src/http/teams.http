@@ -18,7 +18,158 @@ Content-Type: application/json
 
 {
   "userId": "USER_UUID"
+}TP 07 — Migrations, Seeds & Bonnes Pratiques TypeORM
+
+Durée : 45 minutes Objectif : configurer le système de migrations, créer les entités Task et Comment, et seeder la base de données.
+Étape 1 — Dépendances pour les migrations
+
+npm install -D ts-node tsconfig-paths
+
+Ajouter les scripts dans package.json :
+
+{
+  "scripts": {
+    "typeorm": "typeorm-ts-node-commonjs",
+    "migration:generate": "npm run typeorm -- migration:generate -d src/database/data-source.ts",
+    "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
+    "migration:show": "npm run typeorm -- migration:show -d src/database/data-source.ts",
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/seed.ts"
+  }
 }
+
+Étape 2 — Créer le DataSource CLI
+
+mkdir -p src/database/migrations src/database/seeds
+
+Créer src/database/data-source.ts :
+
+import { DataSource } from 'typeorm';
+import * as dotenv from 'dotenv';
+import { join } from 'path';
+
+dotenv.config();
+
+export const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432', 10),
+  database: process.env.DB_NAME || 'taskflow',
+  username: process.env.DB_USER || 'taskflow',
+  password: process.env.DB_PASSWORD || 'taskflow',
+
+  entities: [join(__dirname, '/../**/*.entity{.ts,.js}')],
+  migrations: [join(__dirname, '/migrations/*{.ts,.js}')],
+
+  synchronize: false,
+  logging: true,
+});
+
+Étape 3 — Passer synchronize à false dans AppModule
+
+Dans la configuration TypeORM de src/app.module.ts, changer synchronize à false et ajouter le chemin des migrations :
+
+synchronize: false,
+migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+
+    À partir de maintenant, les changements de schéma passent par des migrations.
+
+Étape 4 — Entité Task
+
+Créer src/tasks/entities/task.entity.ts.
+
+Propriétés de la table tasks :
+
+    id — UUID, clé primaire
+    title — max 200 caractères
+    description — texte nullable
+    status — enum TaskStatus, défaut todo
+    priority — enum TaskPriority, défaut medium
+    project — ManyToOne vers Project (colonne project_id, onDelete: 'CASCADE', non nullable)
+    assignee — ManyToOne vers User (colonne assignee_id, onDelete: 'SET NULL', nullable)
+    created_at / updated_at
+
+Étape 5 — Entité Comment
+
+Créer src/comments/entities/comment.entity.ts.
+
+Propriétés de la table comments :
+
+    id — UUID, clé primaire
+    content — texte
+    author — ManyToOne vers User (colonne author_id, onDelete: 'CASCADE')
+    task — ManyToOne vers Task (colonne task_id, onDelete: 'CASCADE')
+    created_at (pas de updated_at — un commentaire n'est pas modifiable)
+
+Étape 6 — Mettre à jour Project pour OneToMany Tasks
+
+Dans src/projects/entities/project.entity.ts, ajouter la relation inverse :
+
+@OneToMany(() => Task, (task) => task.project)
+tasks: Task[];
+
+Étape 7 — Enregistrer les nouvelles entités
+
+Mettre à jour src/tasks/tasks.module.ts et src/comments/comments.module.ts pour importer TypeOrmModule.forFeature([Task]) et TypeOrmModule.forFeature([Comment]) respectivement.
+Étape 8 — Générer et appliquer la migration
+
+# Générer la migration (TypeORM compare entités ↔ DB actuelle)
+npm run migration:generate -- src/database/migrations/AddTasksAndComments
+
+# Inspecter le fichier généré dans src/database/migrations/
+# Vérifiez que le SQL créé correspond à vos entités
+
+# Appliquer la migration
+npm run migration:run
+
+# Vérifier l'état
+npm run migration:show
+
+Étape 9 — Script de seed
+
+Créer src/database/seeds/seed.ts. Ce script doit :
+
+    Initialiser AppDataSource
+    Vider les tables dans le bon ordre (respecter les FK) avec TRUNCATE ... CASCADE
+    Créer 3 utilisateurs (alice admin, bob member, charlie viewer) — mot de passe haché
+    Créer 2 équipes (Alpha avec alice+bob, Beta avec charlie)
+    Créer 2 projets rattachés à Alpha
+    Créer 3 tâches rattachées au premier projet
+    Créer 2 commentaires sur les tâches
+    Fermer la connexion avec AppDataSource.destroy()
+
+    Utilisez AppDataSource.getRepository(User) pour accéder aux repositories. Ajoutez des console.log pour suivre la progression.
+
+Lancer le seed :
+
+npm run seed
+
+Étape 10 — Vérification finale
+
+npm run start:dev
+
+curl http://localhost:3000/api/projects
+# → [{ "id": "...", "name": "TaskFlow v1", ... }]
+
+Checkpoint ✓
+
+    package.json contient les scripts migration:* et seed
+    src/database/data-source.ts créé
+    synchronize: false dans AppModule
+    task.entity.ts et comment.entity.ts créés
+    npm run migration:run s'exécute sans erreur
+    npm run seed crée 3 users, 2 teams, 2 projects, 3 tasks, 2 comments
+    GET /api/projects retourne les données seedées
+
+Fil rouge après S07
+
+Schéma complet (5 entités) en base, migrations versionnées, seed fonctionnel.
+
+Commit suggéré :
+
+git add .
+git commit -m "feat: migrations TypeORM + entités Task/Comment + script de seed"
+
 
 ### Voir l'équipe avec ses membres et projets
 GET {{baseUrl}}/teams/TEAM_UUID
