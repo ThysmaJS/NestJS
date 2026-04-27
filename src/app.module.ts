@@ -10,6 +10,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { CommentsModule } from './comments/comments.module';
 import { AuthModule } from './auth/auth.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './auth/guards/roles.guard';
 
@@ -40,6 +41,7 @@ import { RolesGuard } from './auth/guards/roles.guard';
     TasksModule,
     CommentsModule,
     AuthModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
