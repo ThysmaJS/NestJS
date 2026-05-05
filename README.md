@@ -73,10 +73,28 @@ JWT_SECRET=taskflow-super-secret-key-change-in-production
 JWT_EXPIRES_IN=24h
 ```
 
-### 4. Lancer les migrations
+### 4. Créer et appliquer les migrations
+
+Si la base est vide (premier démarrage ou DB réinitialisée), générer une migration initiale depuis les entités :
 
 ```bash
+npm run migration:generate -- src/database/migrations/NomDeLaMigration
 npm run migration:run
+```
+
+> **Note :** la commande `migration:generate` compare l'état des entités avec le schéma existant en base et génère le diff SQL correspondant. Si les tables n'existent pas encore, elle génère une migration de création complète.
+
+À chaque modification d'une entité (ajout de colonne, changement de type…), répéter la même séquence avec un nom descriptif :
+
+```bash
+npm run migration:generate -- src/database/migrations/AddDueDateToTasks
+npm run migration:run
+```
+
+Pour annuler la dernière migration :
+
+```bash
+npm run migration:revert
 ```
 
 ### 5. Seeder la base

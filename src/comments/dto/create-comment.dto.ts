@@ -1,13 +1,14 @@
-import { IsString, MaxLength, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsUUID } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateCommentDto {
+  @ApiProperty({ example: 'Super travail sur cette tâche !' })
   @IsString()
-  @MaxLength(1000, { message: 'Le contenu doit faire au maximum 1000 caractères' })
-  content: string;
+  @IsNotEmpty()
+  @MaxLength(1000)
+  content!: string;
 
-  @IsUUID('4', { message: 'taskId doit être un UUID v4 valide' })
-  taskId: string;
-
-  @IsUUID('4', { message: 'authorId doit être un UUID v4 valide' })
-  authorId: string;
+  @ApiProperty({ example: 'uuid-de-la-tache' })
+  @IsUUID('4')
+  taskId!: string;
 }
